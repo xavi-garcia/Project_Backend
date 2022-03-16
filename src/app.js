@@ -1,9 +1,10 @@
 const express = require('express');
 const {Server} = require('socket.io');
-const ProductManager = require('./Manager/ProductsManager')
+
+const ProductsManagerDB = require ('./Manager/ProductsManager.js')
 
 //Services
-const productsService = new ProductManager()
+const productService = new ProductsManagerDB();
 const app = express();
 const PORT = process.env.PORT||8080;
 const server = app.listen(PORT,()=>console.log(`Listening on PORT${PORT}`))
@@ -11,12 +12,14 @@ const io = new Server(server);
 
 app.use(express.static(__dirname+'/public'))
 
+
+
 io.on('connection', async socket=>{
     console.log('client is online');
     socket.on('sendProduct', async data=>{
-       await productsService.add(data);
+       await productService.add(data);
        console.log(data)
-       let products = await productsService.getAll();
+       let products = await productService.getAll();
        io.emit('productsLog', products)
     })
 })
@@ -36,3 +39,4 @@ io.on('connection',(socket)=>{
         socket.emit('log',log);
     })
 })
+
