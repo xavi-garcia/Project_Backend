@@ -1,6 +1,10 @@
 const socket = io();
-let form = document.getElementById('productForm');
+let user = {};
+const input = document.getElementById("chatInput");
+const chatLog = document.getElementById("chatLog");
 
+//Products
+let form = document.getElementById('productForm');
 form.addEventListener('submit', (evt)=>{
     evt.preventDefault();
     let data = new FormData(form);
@@ -8,8 +12,9 @@ form.addEventListener('submit', (evt)=>{
     data.forEach((val,key)=>sendObj[key]=val);
     socket.emit('sendProduct', sendObj);
     form.reset()
-})
+});
 
+//Socket Products
 socket.on('productsLog', data=>{
     let products = data.payload;
     let productsTemplate = document.getElementById('productsTemplate');
@@ -17,52 +22,72 @@ socket.on('productsLog', data=>{
         return response.text();
     }).then(template=>{
         const processedTemplate = Handlebars.compile(template);
+        let products = data.payload;
         const html = processedTemplate({products})
         productsTemplate.innerHTML = html;
     })
 })
 
-
-let user;
-let chatBox = document.getElementById('chatBox');
-let button = document.getElementById('button')
-Swal.fire({
-    title:"User's name",
-    input:"text",
-    text:"What's your user name?",
-    inputValidator: (value)=>{
-        return !value && "You need to write a name!"
-    },
-    allowOutsideClick:false
-}).then(result=>{
-    user=result.value;
-    socket.emit('registered',user);
-})
-
-button.addEventListener('click',(evt)=>{
-    if('click'){
-       if(chatBox.value.trim().length>0){
-        socket.emit('message',{user:user, message:chatBox.value.trim()})
-        chatBox.value="";
-       }
+//Chat
+const userLogged = {
+    author: {},
+    text: {},
+};
+  
+const authentication = async () => {
+    const { value: formValues } = await new Swal({
+      title: "Log in",
+      html:
+        '<input id="swal-input1" class="swal2-input" placeholder="First Name">' +
+        '<input id="swal-input2" class="swal2-input" placeholder="Last Name">' +
+        '<input id="swal-input3" class="swal2-input" placeholder="Age">' +
+        '<input id="swal-input4" class="swal2-input" placeholder="Alias">' +
+        '<input id="swal-input6" class="swal2-input" placeholder="Email">',
+      focusConfirm: false,
+      allowOutsideClick: false,
+      preConfirm: () => {
+        userLogged.author.first_name = document.getElementById("swal-input1").value;
+        userLogged.author.last_name = document.getElementById("swal-input2").value;
+        userLogged.author.age = document.getElementById("swal-input3").value;
+        userLogged.author.alias = document.getElementById("swal-input4").value;
+        userLogged.author.id = document.getElementById("swal-input6").value;
+        user.user = document.getElementById("swal-input6").value;
+      },
+    });
+    if (formValues) {
+      console.log(formValues);
     }
-})
+};
+  
+authentication();
+  
 
+input.addEventListener("keyup", (e) => {
+    if (e.key === "Enter") {
+      inputValue = input.value.trim();
+      user.message = inputValue;
+      socket.emit("message", user);
+      userLogged.text.message = input.value.trim();
+      socket.emit("authentication", userLogged);
+      input.value = "";
+    }
+});
 
-socket.on('newUser',(data)=>{
-    Swal.fire({
-        icon:"success",
-        text:"new user online"
-
-    }) 
-})
-
-socket.on('log', data =>{
-    let log = document.getElementById('log');
+//Sockets Chat
+  
+socket.on("chatLog", (data) => {
+    console.log(data);
     let messages = "";
-    data.forEach(message=>{
-        let today = new Date()
-        messages =  messages + `${today.toDateString() + ' - ' + message.user} says: ${message.message}</br>`;
-    })
-    log.innerHTML = messages;
-})
+    data.forEach((message) => {
+      console.log(message);
+      messages += `
+                      <div class="chatMessage">
+                          <p class="email">${message.user}:</p>
+                          <p class="time">${message.time}</p>
+                          <p class="message">${message.message}</p>
+                      </div>
+                      `;
+    });
+    chatLog.innerHTML = messages;
+});
+  

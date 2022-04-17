@@ -27,7 +27,7 @@
     color: aliceblue;
 }
 
-.container-chat{
+#chatContainer{
     border: 2px solid #dedede;
     background-color: #f1f1f1;
     border-radius: 5px;
@@ -39,7 +39,7 @@
     width: 350px;
 }
 
-#log{
+#chatLog{
     border-color: #ccc;
     background-color: #ddd;
 }

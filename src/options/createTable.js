@@ -1,7 +1,7 @@
 const options = require('../options/mysqlconfig.js');
 const knex = require('knex');
 
-const database = knex(options)
+const database = knex(options);
 
 const createTable = async () => {
     let tableExists = await database.schema.hasTable('products');
@@ -18,5 +18,23 @@ const createTable = async () => {
             console.log('table created')
         })
  }
+ 
 
 createTable()
+
+const createUserTable = async () => {
+    let tableUsersExists = await database.schema.hasTable('users');
+    if(tableUsersExists){
+        await database.schema.dropTable('users');
+    }
+    await database.schema.createTable("messages", (table) => {
+    table.string("user").nullable(false);
+    table.string("message", 100).nullable(false);
+  })
+  .then(() => {
+    console.log("user table created");
+  })
+
+}
+
+createUserTable()
