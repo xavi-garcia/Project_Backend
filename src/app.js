@@ -1,10 +1,16 @@
 const express = require('express');
 const {Server} = require('socket.io');
-const ProductsRouter = require('./routes/productsRoute');
 const { normalize, schema } = require ('normalizr');
+const cookieParser = require('cookie-parser');
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const moment = require('moment');
+
+
+const ProductsRouter = require('./routes/productsRoute');
 const ProductsManagerDB = require ('./Manager/ProductsManager.js');
 const MessageManager = require('./Manager/MessageManager.js');
+
 
 //Services
 const productService = new ProductsManagerDB();
@@ -14,11 +20,47 @@ const PORT = process.env.PORT||8080;
 const server = app.listen(PORT,()=>console.log(`Listening on PORT${PORT}`))
 const io = new Server(server);
 
-app.use(express.static(__dirname +'/public'))
+app.use(express.static(__dirname +'/public'));
+app.use(express.urlencoded({extended: true}));
+app.use(express.json());
+
+//Session
+app.use(cookieParser());
+app.use(session({
+      store: MongoStore.create({
+          mongoUrl: 'mongodb+srv://javier:123@codercluster.mmv7k.mongodb.net/MySessionsDB?retryWrites=true&w=majority',
+          ttl: 600
+      }),
+      secret: 'mongoatlasjavi',
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+          maxAge: 600000
+    }
+}));
 
 //Router
 app.use("/api/products-test", ProductsRouter);
 
+
+//LogIn and LogOut
+app.get('/logout', (req, res) => {
+    res.redirect('/logout', {
+        username: req.session.username
+    });
+    req.session.destroy();
+});
+
+app.post('/login', async (req, res) => {
+    req.session.username = req.body.username
+    res.send({message: 'You are logged in!'});
+});
+
+app.post('/logout', async (req, res) => {
+    const username = req.session.username;
+    req.session.destroy();
+    res.send({message: 'You logged out!', username});
+});
 
 //Sockets
 io.on('connection', async socket=>{
