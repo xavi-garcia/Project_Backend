@@ -1,113 +1,110 @@
 const express = require('express');
-const {Server} = require('socket.io');
-const { normalize, schema } = require ('normalizr');
-const cookieParser = require('cookie-parser');
 const session = require('express-session');
-const MongoStore = require('connect-mongo');
-const moment = require('moment');
+const bcrypt = require('bcrypt');
+const mongoose = require('mongoose');
+const path = require('path');
+const User = require('./models/User');
+const passport = require('passport');
+const LocalStrategy = require('passport-local').Strategy
 
-
-const ProductsRouter = require('./routes/productsRoute');
-const ProductsManagerDB = require ('./Manager/ProductsManager.js');
-const MessageManager = require('./Manager/MessageManager.js');
-
-
-//Services
-const productService = new ProductsManagerDB();
-const messageService = new MessageManager();
 const app = express();
-const PORT = process.env.PORT||8080;
-const server = app.listen(PORT,()=>console.log(`Listening on PORT${PORT}`))
-const io = new Server(server);
 
-app.use(express.static(__dirname +'/public'));
-app.use(express.urlencoded({extended: true}));
+app.listen(8080,()=>{console.log('Listening on Port 8080')});
+
+//Archivos estaticos
+const publicPath = path.join(__dirname+"/public");
+app.use(express.static(publicPath));
+
+//Configuración de req.body
 app.use(express.json());
+app.use(express.urlencoded({extended:true}));
 
-//Session
-app.use(cookieParser());
+ const URL = "mongodb+srv://javier:123@codercluster.mmv7k.mongodb.net/passportdb?retryWrites=true&w=majority";
+ mongoose.connect(URL, {
+    useNewUrlParser: true, useUnifiedTopology: true
+ }, error=>{
+     if(error) throw new Error('Cannot connect');
+     console.log("db connected")
+ });
+
+//Crear sesión
 app.use(session({
-      store: MongoStore.create({
-          mongoUrl: 'mongodb+srv://javier:123@codercluster.mmv7k.mongodb.net/MySessionsDB?retryWrites=true&w=majority',
-          ttl: 600
-      }),
-      secret: 'mongoatlasjavi',
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-          maxAge: 600000
-    }
+    secret:'clave',
+    resave:true,
+    saveUninitialized:true
 }));
 
-//Router
-app.use("/api/products-test", ProductsRouter);
+//Configurar passport para la sesión
+//Inicializar passport
+app.use(passport.initialize());
 
+//Vincular esta sesión con passport
+app.use(passport.session());
 
-//LogIn and LogOut
-app.get('/logout', (req, res) => {
-    res.redirect('/logout', {
-        username: req.session.username
-    });
-    req.session.destroy();
+//Serialización
+passport.serializeUser((user, done)=>{
+    return done(null, user.id)
 });
 
-app.post('/login', async (req, res) => {
-    req.session.username = req.body.username
-    res.send({message: 'You are logged in!'});
-});
-
-app.post('/logout', async (req, res) => {
-    const username = req.session.username;
-    req.session.destroy();
-    res.send({message: 'You logged out!', username});
-});
-
-//Sockets
-io.on('connection', async socket=>{
-    console.log('client is online');
-    let products = await productService.getAll();
-    io.emit("productLog", products);
-    socket.on('sendProduct', async data=>{
-       await productService.add(data);
-       console.log(data)
-       let products = await productService.getAll();
-       io.emit('productsLog', products)
+//Deserialización
+passport.deserializeUser((id, done)=>{
+    User.findById(id,(err,user)=>{
+        return done(err, user)
     })
+});
+
+const createHash = (password) =>{
+    return bcrypt.hashSync(
+        password,
+        bcrypt.genSaltSync(10)
+    )
+}
+
+//Estrategia con passport de registro
+passport.use('registro', new LocalStrategy(
+    {
+        passReqToCallback: true
+    },
+    (req, username, password, done)=>{
+        User.findOne({username:username},(err, user)=>{
+            if(err) return done(err)
+            if(user) return done(null, false, {message:"user already exists"});
+            const newUser = {
+                name: req.body.name,
+                username: username,
+                password: createHash( password)
+            }
+            User.create(newUser,(err, userCreated)=>{
+                if(err) return done (err);
+                return done(null, userCreated)
+            })
+        })
+    }
+
+))
+
+
+
+//routes
+app.get('/', (req,res)=>{
+    res.sendFile(publicPath+ '/index.html')
+});
+
+app.get('/signup', (req,res)=>{
+    res.sendFile(publicPath+ '/signup.html')
+});
+
+app.get('/login', (req,res)=>{
+    res.sendFile(publicPath+ '/login.html')
+});
+
+app.get('/perfil', (req,res)=>{
+    res.sendFile(publicPath+ '/perfil.html')
+});
+
+app.post("/signupForm", passport.authenticate('registro',{
+    failureRedirect: '/signup'
+}),(req, res)=>{
+    res.redirect("/perfil")
+    console.log(req.body)
 })
-
-let log = [];
-const iLog = [];
-const mainLog = {
-  id: "xmen",
-  name: "Chat Area",
-  log: log,
-};
-
-io.on("connection", (socket) => {
-  socket.emit("chatLog", iLog);
-  socket.on("message", (data) => {
-    console.log(data);
-    data.time = moment().format("HH:mm:ss DD/MM/YYYY");
-    iLog.push(data);
-    io.emit("chatLog", iLog);
-  });
-
-  socket.on("authentication", (data) => {
-    data.text.time = moment().format("HH:mm:ss DD/MM/YYYY");
-    console.log(data)
-    log.push(data);
-    console.log(JSON.stringify(normalizedData, null, '\t'))
-  });
-});
-
-
-//NORMALIZATION
-const author = new schema.Entity("author");
-const chatSchema = new schema.Entity("Chat Area", {
-  author: author,
-  messages: [author],
-});
-
-const normalizedData = normalize(mainLog, chatSchema);
-
-

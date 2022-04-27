@@ -1,35 +1,35 @@
-const options = require('../options/mysqlconfig.js');
-const knex = require('knex');
+// const options = require('../options/mysqlconfig.js');
+// const knex = require('knex');
 
-const database = knex(options)
+// const database = knex(options)
 
-class ProductManagerDB {
+// class ProductManagerDB {
   
 
-    add = async (obj) => {
-        const database = knex(options);
-        try{
-            const response = await database('products').insert([obj]);
-            let results = await database.from('products').select('*');
-            let items = JSON.parse(JSON.stringify(results));
-            console.log(items);
-            return {status:"success", payload:response};
-        }catch (error){
-            console.log(error)
-        } finally {
-            database.destroy()
-        }
-    }
+//     add = async (obj) => {
+//         const database = knex(options);
+//         try{
+//             const response = await database('products').insert([obj]);
+//             let results = await database.from('products').select('*');
+//             let items = JSON.parse(JSON.stringify(results));
+//             console.log(items);
+//             return {status:"success", payload:response};
+//         }catch (error){
+//             console.log(error)
+//         } finally {
+//             database.destroy()
+//         }
+//     }
 
-    getAll = async() =>{
-        let tableExists = await database.schema.hasTable('products');
-        if (tableExists){
-            let products = await database('products').select('*');
-            return {status:"success", payload: products};
-        } else{
-            console.log('table does no exist')
-        }
-    }
+//     getAll = async() =>{
+//         let tableExists = await database.schema.hasTable('products');
+//         if (tableExists){
+//             let products = await database('products').select('*');
+//             return {status:"success", payload: products};
+//         } else{
+//             console.log('table does no exist')
+//         }
+//     }
 
 
     // getById = async (id) =>{
@@ -58,6 +58,6 @@ class ProductManagerDB {
     //         else return {status:"fail", error:"no such product"}
     //     }
     // }
-}
+// }
 
-module.exports = ProductManagerDB;
+// module.exports = ProductManagerDB;

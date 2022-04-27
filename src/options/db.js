@@ -1,6 +1,6 @@
-import options from "./options/mysqlconfig.js";
-import knex from "knex";
+// import options from "./options/mysqlconfig.js";
+// import knex from "knex";
 
-const database = knex(options);
+// const database = knex(options);
 
-modules.exports = database;
+// modules.exports = database;
