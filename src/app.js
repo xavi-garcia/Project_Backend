@@ -17,6 +17,7 @@ app.use(express.static(publicPath));
 
 //Configuración de req.body
 app.use(express.json());
+//Middleware que nos permite leer los datos enviados por formularios sin esto express no interpreta la info
 app.use(express.urlencoded({extended:true}));
 
  const URL = "mongodb+srv://javier:123@codercluster.mmv7k.mongodb.net/passportdb?retryWrites=true&w=majority";
@@ -29,9 +30,9 @@ app.use(express.urlencoded({extended:true}));
 
 //Crear sesión
 app.use(session({
-    secret:'clave',
-    resave:true,
-    saveUninitialized:true
+    secret:'myappnodejs',
+    resave:true, //en verdadero significa que aunque no haya sido modificada la vamos a volver a guardar
+    saveUninitialized:true// aunque no le guardemos nada se va a guardar
 }));
 
 //Configurar passport para la sesión
@@ -83,6 +84,26 @@ passport.use('registro', new LocalStrategy(
 
 ))
 
+//Estrategia con passport de login
+passport.use('login', new LocalStrategy(
+  {
+      passReqToCallback: true
+  },
+  (req, username, password, done)=>{
+      User.findOne({username:username},(err,userFound)=>{
+          if(err) return done(err);
+          //validamos si el usuario no existe
+          if(!userFound) return done(null, false, {message:"user does not exists"})
+          //si encuentra el usuario, verificamos la contrasena
+          if(!bcrypt.compare(password, userFound.password)){
+              return done(null, false,{message:"invalid password"})
+          }
+          //abrir la sesion con el userFound
+          req.session.user = {username: userFound.username}
+          done(null, userFound);
+      })
+  }
+))
 
 
 //routes
@@ -98,13 +119,31 @@ app.get('/login', (req,res)=>{
     res.sendFile(publicPath+ '/login.html')
 });
 
+app.get('/logout',(req,res)=>{
+  req.logOut();
+  req.session.destroy();
+  res.redirect('/');
+})
+
 app.get('/perfil', (req,res)=>{
     res.sendFile(publicPath+ '/perfil.html')
 });
 
+app.get('/error', (req, res)=>{
+  res.sendFile(publicPath+ '/error.html')
+})
+
 app.post("/signupForm", passport.authenticate('registro',{
-    failureRedirect: '/signup'
+    failureRedirect: '/error.html'
 }),(req, res)=>{
     res.redirect("/perfil")
     console.log(req.body)
+})
+
+app.post("/loginForm", passport.authenticate('login',{
+  failureRedirect: '/error.html',
+  failureMessage: true
+}),(req, res)=>{
+  res.redirect("/perfil")
+  console.log(req.body)
 })
