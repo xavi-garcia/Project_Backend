@@ -1,26 +1,39 @@
+//Express
 const express = require('express');
 const session = require('express-session');
-const bcrypt = require('bcrypt');
-const mongoose = require('mongoose');
-const path = require('path');
-const User = require('./models/User');
+
+//Passport
 const passport = require('passport');
-const LocalStrategy = require('passport-local').Strategy
+const LocalStrategy = require('passport-local').Strategy;
+
+//Mongo
+const mongoStore = require('connect-mongo');
+const mongoose = require('mongoose');
+
+//Path
+const path = require('path');
+
+//Model
+const User = require('./models/User');
+
+//Bcrypt
+const bcrypt = require('bcrypt');
 
 const app = express();
 
 app.listen(8080,()=>{console.log('Listening on Port 8080')});
 
-//Archivos estaticos
+
 const publicPath = path.join(__dirname+"/public");
 app.use(express.static(publicPath));
 
-//Configuración de req.body
+
 app.use(express.json());
-//Middleware que nos permite leer los datos enviados por formularios sin esto express no interpreta la info
 app.use(express.urlencoded({extended:true}));
 
- const URL = "mongodb+srv://javier:123@codercluster.mmv7k.mongodb.net/passportdb?retryWrites=true&w=majority";
+
+
+const URL = "mongodb+srv://javier:123@codercluster.mmv7k.mongodb.net/passportdb?retryWrites=true&w=majority";
  mongoose.connect(URL, {
     useNewUrlParser: true, useUnifiedTopology: true
  }, error=>{
@@ -28,26 +41,20 @@ app.use(express.urlencoded({extended:true}));
      console.log("db connected")
  });
 
-//Crear sesión
+
 app.use(session({
     secret:'myappnodejs',
-    resave:true, //en verdadero significa que aunque no haya sido modificada la vamos a volver a guardar
-    saveUninitialized:true// aunque no le guardemos nada se va a guardar
+    resave:true, 
+    saveUninitialized:true
 }));
 
-//Configurar passport para la sesión
-//Inicializar passport
 app.use(passport.initialize());
-
-//Vincular esta sesión con passport
 app.use(passport.session());
 
-//Serialización
 passport.serializeUser((user, done)=>{
     return done(null, user.id)
 });
 
-//Deserialización
 passport.deserializeUser((id, done)=>{
     User.findById(id,(err,user)=>{
         return done(err, user)
@@ -107,6 +114,20 @@ passport.use('login', new LocalStrategy(
 
 
 //routes
+
+app.get('/info', (req, res)=>{
+    res.send(`<div>
+                <h3>Project File: </h3> <p>${process.cwd()}</p>
+                <h3>Execution Path: </h3><p> ${process.execPath}</p>
+                <h3>Platform name: </h3><p> ${process.platform}</p>
+                <h3>Execution Argument: </h3><p>${process.argv}</p>
+                <h3>Node Version: </h3><p>${process.version}</p>
+                <h3>Process Id: </h3><p>${process.pid}</p>
+                <h3>Memory Usage: </h3><p>${process.memoryUsage()}</p>
+    </div>`)
+});
+
+
 app.get('/', (req,res)=>{
     res.sendFile(publicPath+ '/index.html')
 });
