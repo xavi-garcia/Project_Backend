@@ -1,37 +1,67 @@
 //Express
 const express = require('express');
 const session = require('express-session');
-
+//IO
+const {Server} = require('socket.io');;
 //Passport
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
-
 //Mongo
 const mongoStore = require('connect-mongo');
 const mongoose = require('mongoose');
-
 //Path
 const path = require('path');
-
 //Model
 const User = require('./models/User');
-
 //Bcrypt
 const bcrypt = require('bcrypt');
+//Dotenv
+const dotenv = require('dotenv');
+//Cluster
+const cluster = require("cluster");
+const os = require("os");
 
+
+
+//Configuración puerto e io
 const app = express();
+const io = new Server();
 
-app.listen(8080,()=>{console.log('Listening on Port 8080')});
+portService = () =>{
+    const PORT = 8080;
+    const numberCPUs = os.cpus().length;
+    if(PORT === 8080){
+        app.listen(PORT,()=>console.log(`FORK: Listening on PORT${PORT}`));
+    } else {
+        if(cluster.isPrimary){
+            for(let i =0; i<numberCPUs;i++){
+                cluster.fork();
+            }
+        
+            cluster.on('exit',(worker, code, signal)=>{
+                console.log(`El proceso ${worker.process.pid} murio`)
+                cluster.fork()
+            })
+        
+        } else {
+            app.listen(PORT,()=>console.log(` CLUSTER = running process ${process.pid} on port ${PORT}`));
+        }
+    }
+
+}
+
+portService();
+
+
+dotenv.config();
+process.env.MONGOOSE;
 
 
 const publicPath = path.join(__dirname+"/public");
 app.use(express.static(publicPath));
 
-
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
-
-
 
 const URL = "mongodb+srv://javier:123@codercluster.mmv7k.mongodb.net/passportdb?retryWrites=true&w=majority";
  mongoose.connect(URL, {
@@ -39,7 +69,7 @@ const URL = "mongodb+srv://javier:123@codercluster.mmv7k.mongodb.net/passportdb?
  }, error=>{
      if(error) throw new Error('Cannot connect');
      console.log("db connected")
- });
+});
 
 
 app.use(session({
@@ -48,6 +78,7 @@ app.use(session({
     saveUninitialized:true
 }));
 
+//Passport
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -127,7 +158,6 @@ app.get('/info', (req, res)=>{
     </div>`)
 });
 
-
 app.get('/', (req,res)=>{
     res.sendFile(publicPath+ '/index.html')
 });
@@ -168,3 +198,41 @@ app.post("/loginForm", passport.authenticate('login',{
   res.redirect("/perfil")
   console.log(req.body)
 })
+
+//Sockets
+// io.on('connection', async socket=>{
+//     console.log('client is online');
+//     let products = await productService.getAll();
+//     io.emit("productLog", products);
+//     socket.on('sendProduct', async data=>{
+//        await productService.add(data);
+//        console.log(data)
+//        let products = await productService.getAll();
+//        io.emit('productsLog', products)
+//     })
+// })
+
+// let log = [];
+// const iLog = [];
+// const mainLog = {
+//   id: "xmen",
+//   name: "Chat Area",
+//   log: log,
+// };
+
+// io.on("connection", (socket) => {
+//   socket.emit("chatLog", iLog);
+//   socket.on("message", (data) => {
+//     console.log(data);
+//     data.time = moment().format("HH:mm:ss DD/MM/YYYY");
+//     iLog.push(data);
+//     io.emit("chatLog", iLog);
+//   });
+
+//   socket.on("authentication", (data) => {
+//     data.text.time = moment().format("HH:mm:ss DD/MM/YYYY");
+//     console.log(data)
+//     log.push(data);
+//     console.log(JSON.stringify(normalizedData, null, '\t'))
+//   });
+// });
