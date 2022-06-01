@@ -53,7 +53,7 @@ const io = new Server();
 dotenv.config();
 process.env.MONGOOSE;
 
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
 const numberCPUs = os.cpus().length;
 portService = () =>{
     if(PORT == 8080){
