@@ -53,12 +53,12 @@ const io = new Server();
 dotenv.config();
 process.env.MONGOOSE;
 
-const PORT = process.env.PORT || 8080;
+const port = process.env.PORT || 8080;
 const numberCPUs = os.cpus().length;
 portService = () =>{
-    if(PORT == 8080){
-        app.listen(PORT,()=>logger.info(`FORK: Listening on PORT: ${PORT}`));
-    } else if (PORT === 8081) {
+    if(port == 8080){
+        app.listen(port,()=>logger.info(`FORK: Listening on PORT: ${port}`));
+    } else if (port === 8081) {
         if(cluster.isPrimary){
             for(let i =0; i<numberCPUs;i++){
                 cluster.fork();
@@ -68,7 +68,7 @@ portService = () =>{
                 cluster.fork()
             })
         } else {
-            app.listen(PORT,()=>logger.info(` CLUSTER = running process ${process.pid} on port ${PORT}`));
+            app.listen(port,()=>logger.info(` CLUSTER = running process ${process.pid} on port ${port}`));
         }
     }
 }
