@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "compression": "^1.7.4",
-    "log4js": "^6.5.1"
-  }
-}
