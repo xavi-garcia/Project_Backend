@@ -18,23 +18,6 @@ router.get("/datos",(req,res)=>{
     res.send(`<h1>soy el servidor express con datos corriendo en el proceso  ${process.pid}</h1>`)
 })
 
-router.get('/api/randoms/:num',(req, res)=>{
-    try{
-        if(PORT === 8081 || PORT === 8082 || PORT === 8083 || PORT === 8084 || PORT === 8085){
-            let param =  req.params.num;
-            randomNumbers =[];
-            for(let i=0; i<param; i++){ 
-                let randomIndex = Math.floor((Math.random(param) * 1000) + 1); 
-                randomNumbers.push(randomIndex)
-            }
-            res.send({randomNumbers});
-            console.log(`${randomNumbers} running on process ${process.pid} on port ${PORT}`) 
-        }
-    }
-    catch (error) {
-        console.log(error);
-    } 
 
-})
 
 module.exports = router;
